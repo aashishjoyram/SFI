@@ -190,9 +190,9 @@
 	<single-column name="current_date" value="${current_date}"/>
 	<single-column name="previous_date" value="${previous_date}"/>
 	<single-column name="second_previous_date" value="${second_previous_date}"/>
-	<single-column name="daily_path_raw_str" value="${daily_path_str}"/>
+	<single-column name="daily_path_str" value="${daily_path_str}"/>
 	<single-column name="pwd_path_str" value="${pwd_path_str}"/>
-	<single-column name="monthly_report_path_str" value="${monthly_report_path_str}"/>
+	<single-column name="daily_report_path_str" value="${daily_report_path_str}"/>
 	<single-column name="open_path" value="${open_path}"/>
 	<single-column name="ph_check" value="${ph_check}"/>
 </export>

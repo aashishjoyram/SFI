@@ -3,11 +3,19 @@
 
 <secrets-vault-get alias="ebox" />
 
-<var-def name="links">
+<var-def name="bot_task_properties">
 	<datastore name="sfi_refund">
-		SELECT * FROM @this
+		<template>select * from @this</template>
 	</datastore>
-</var-def> 
+</var-def>
+
+<script><![CDATA[
+	def BOT_CONFIG = [:]
+	bot_task_properties.getWrappedObject().toList().each { property ->
+		BOT_CONFIG.put(property.get("name").toString(), property.get("value").toString())
+	}
+	sys.defineVariable("BOT_CONFIG", BOT_CONFIG)
+]]></script>
 	
 	<robotics-flow>
 <robot driver="universal" name="driver" start-in-private="false" close-on-completion="true">
@@ -92,12 +100,17 @@
 			import java.util.Comparator;
 			import org.apache.commons.lang.ArrayUtils;
 			
+			//Recycle
+			String download_path = open_path;
+			String karanLocalStr = current_date;
+			String pwdStr 		 = previous_date;
+			String previousPwdStr = second_previous_date;
+			String daily_path =  daily_path_str;
+			String dateExcelPath = daily_report_path_str;
 			
-			//DATE
-			//LocalDate karanLocal    = LocalDate.parse("2020-09-30"); 							
-			LocalDate karanLocal    = LocalDate.now()		
-			LocalDate pwd		    = karanLocal.minusDays(1);										//live
-			LocalDate second_pwd	= pwd.minusDays(1);
+			LocalDate karanLocal    = LocalDate.parse(karanLocalStr); 
+			LocalDate pwd   	    = LocalDate.parse(pwdStr); 			
+			LocalDate second_pwd   	= LocalDate.parse(previousPwdStr); 			
 			LocalDateTime kLDT 		= LocalDateTime.now(ZoneId.of("GMT+04:00"));
 			
 			DateTimeFormatter csvDateFormat   = DateTimeFormatter.ofPattern("M/d/yyyy");
@@ -112,17 +125,17 @@
 			DateTimeFormatter MAFileBODateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			String tayme = karanLocal.toString() + " " + kLDT.getHour().toString()+ "_" + kLDT.getMinute().toString()
 			
+			
+			
 			////DATASTORE
-			//DIRECTORY
-			String Dir = links.get(0).getAt("path").toString();
 			//EBOX PORTAL
-			String ebox_portal = links.get(0).getAt("ebox_portal").toString();
+			String ebox_portal = (BOT_CONFIG.getWrappedObject().get("ebox_portal").toString());
 			//MA FOLDER PATH
-			String MAFolder_path = links.get(0).getAt("MAFolder_path").toString()
+			String MAFolder_path = (BOT_CONFIG.getWrappedObject().get("MAFolder_path").toString());
 			//201 REPORTS FOLDER
-			String reports201_path = links.get(0).getAt("reports201_path").toString();
-			//DOWNLOAD PATH
-			String download_path = links.get(0).getAt("download_path").toString();
+			String reports201_path = (BOT_CONFIG.getWrappedObject().get("reports201_path").toString());
+			
+			
 			
 			//SECRETS VAULT
 			Map entryMap = secureEntryMap.getWrappedObject();
@@ -141,11 +154,7 @@
 			//String ebox_pass = "Wheeljack01";
 			
 			//PATH
-			//String download_path = "C:\\Users\\RB-MU_Robot_VPC_01\\Downloads\\";
 			String morongwa_path = "";
-			//String MAFolder_path = "Q:\\CORPORATE ENTITY\\Year 2020\\Sybrin Echannel\\";
-			//String reports201_path = "Q:\\ROBOTICS\\201 REPORTS\\"; 
-			//String Dir = "Q:\\ROBOTICS\\SFI Refund\\" 
 		
 			//swift cmp
 			String[] bombaclak;
@@ -165,28 +174,14 @@
 			
 			//2dp double format
 			DecimalFormat decimal2DPFormat = new DecimalFormat("#.##");
-			
-			
-			//LIST OF PUB_HO
-			List dateList = new ArrayList();
-			for(int i = 0; i < ph.size(); i++){
-				date = ph.get(i).getAt("Date").toString();	
-				dateList.add(date);
-			}
-			
-			//PREVIOUS AND SECOND PREVIOUS WORKING DATES
-			pwd = previousWorkingDate(karanLocal,dateList);
-			second_pwd = previousWorkingDate(pwd,dateList);
 
 			log.info("Current Day: "+karanLocal);
-			//PWD CHANGES 
 			log.info("Previous Working Day: "+pwd);
 			log.info("Second Previous Working Day: "+second_pwd);
 			
 			//path
-			String daily_path =  "//muebcyp02fvg02//eProcessing1\$//ROBOTICS//SFI Refund//2020//10 October//07.10.20//Evening//"//dailyPathStr;
 			String morongwaFileDailyPath = daily_path+tayme+"_morongwa_swift.xlsx"
-			String dateExcelPath = "//muebcyp02fvg02//eProcessing1\$//ROBOTICS//SFI Refund//2020//10 October//07.10.20//Evening//071020_evening_report.xlsx";//dateExcelPathStr; //test in control tower
+			
 			
 			//LOG FILE
 			FileWriter fr = new FileWriter(daily_path+"log.txt", true);
@@ -1071,8 +1066,8 @@
 						//credit narrative
 						outputSheet2.getRow(outputRowCount2+1).createCell(6).setCellValue(st.cred_narrative);
 						//amount
-						double amount_double = Double.parseDouble(st.amount);
-						outputSheet2.getRow(outputRowCount2+1).createCell(7).setCellValue(decimal2DPFormat.format(amount_double));
+						//double amount_double = Double.parseDouble(st.amount);
+						outputSheet2.getRow(outputRowCount2+1).createCell(7).setCellValue(decimal2DPFormat.format(st.amount));
 						
 						outputRowCount2++;
 					}
@@ -1138,41 +1133,6 @@
 				}  
 			} 
 			
-			//PREVIOUS WORKING DAY
-			public previousWorkingDate(LocalDate date, List publicHolidaysList){
-				DateTimeFormatter csvDateFormat   = DateTimeFormatter.ofPattern("M/d/yyyy");
-				boolean validPwd = false;
-				LocalDate pwd = date.minusDays(1);	
-				while(!validPwd){
-					
-					String pwdCheck = pwd.format(csvDateFormat);
-						 
-					//PREVIOUS WORKING IS A NON-SUNDAY PUBLIC HOLIDAY
-					if(publicHolidaysList.contains(pwdCheck) && pwd.getDayOfWeek().toString() != "SUNDAY"){
-						pwd = pwd.minusDays(1);
-
-					}
-					//THE WEEKND
-					else if(pwd.getDayOfWeek().toString() == "SUNDAY"){
-						//SUNDAY
-						if(pwd.getDayOfWeek().toString() == "SUNDAY"){
-							pwd = pwd.minusDays(1);
-						}
-						
-						//SATURDAY
-						if(pwd.getDayOfWeek().toString() == "SATURDAY"){
-							pwd = pwd.minusDays(1);
-						}
-					}
-					//ALL OTHER SCENARIOS(NORMAL WORKING DAY)
-					else{
-						validPwd = true;
-					}
-					
-					
-				}
-				return pwd;
-			}
 			
 			////////////////////////////////////////////////////////////DEFINITION//////////////////////////////////////////////////////////////////////
 			

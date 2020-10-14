@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config xmlns="http://web-harvest.sourceforge.net/schema/1.0/config" scriptlang="groovy">
 
-<secrets-vault-get alias="ebox" />
+<secrets-vault-get alias="evolve_debit" />
+<secrets-vault-get alias="evolve_credit" />
 
-<var-def name="ph">
-		<datastore name="public_holidays">
-			SELECT * from @this
-		</datastore>
+<var-def name="bot_task_properties">
+	<datastore name="sfi_refund">
+		<template>select * from @this</template>
+	</datastore>
 </var-def>
 
-
-<var-def name="links">
-	<datastore name="sfi_refund">
-		SELECT * FROM @this
-	</datastore>
-</var-def> 
+<script><![CDATA[
+	def BOT_CONFIG = [:]
+	bot_task_properties.getWrappedObject().toList().each { property ->
+		BOT_CONFIG.put(property.get("name").toString(), property.get("value").toString())
+	}
+	sys.defineVariable("BOT_CONFIG", BOT_CONFIG)
+]]></script>
 	
 	<robotics-flow>
 <robot driver="universal" name="driver" start-in-private="false" close-on-completion="true">
@@ -39,15 +41,30 @@
 			
 			
 		<script><![CDATA[
-		
+			
+			//Recycle
+			String daily_path =  daily_path_str;
+			String dateExcelPath = daily_report_path_str;
+			
 			//path
-			String dateExcelPath = "\\\\muebcyp02fvg02\\eProcessing1\$\\ROBOTICS\\SFI Refund\\2020\\10 October\\07.10.20\\Evening\\310920_evening_report.xlsx";//dailyPathStr;
-			String daily_path = "\\\\muebcyp02fvg02\\eProcessing1\$\\ROBOTICS\\SFI Refund\\2020\\10 October\\07.10.20\\Evening\\"//dateExcelPathStr;
 			String log_path = daily_path+"log.txt";
 			
+			////DATASTORE
+			//EVOLVE PORTAL
+			String evolve_portal = (BOT_CONFIG.getWrappedObject().get("evolve_portal").toString());
+			
+			//SECRETS VAULT
+			Map entryMap = secureEntryMap.getWrappedObject();
+			Map entryMap2 = secureEntryMap.getWrappedObject();
+			com.freedomoss.crowdcontrol.webharvest.web.dto.SecureEntryDTO obj = entryMap.get("evolve_debit");
+			com.freedomoss.crowdcontrol.webharvest.web.dto.SecureEntryDTO obj2 = entryMap.get("evolve_crebit");
+			evolve_debit_login = obj.getKey().toString();
+			evolve_credit_login = obj2.getKey().toString();
+			evolve_debit_pass = obj.getValue().toString();
+			evolve_credit_pass = obj2.getValue().toString();
 			
 			//LOG FILE
-			FileWriter fr = new FileWriter(daily_path+"log.txt", true);
+			FileWriter fr = new FileWriter(log_path, true);
 			BufferedWriter loginta = new BufferedWriter(fr);
 			
 			loginta.append("----------------------------------------------------");
@@ -61,9 +78,12 @@
 			log.info("SFI Evolve- Debit");
 			loginta.append("SFI Evolve- Debit");
 			loginta.newLine();
-			openChrome('http://muubhemapp0007.corp.dsarena.com:8180/sfiwebclient/login.jsp');
-			Username = "OLI@01REVD" 
-			Password = "Apple001"
+			//openChrome('http://muubhemapp0007.corp.dsarena.com:8180/sfiwebclient/login.jsp');
+			openChrome(evolve_portal);
+			//Username = "OLI@01REVD" 
+			Username = evolve_debit_login;
+			Password = evolve_debit_pass;
+			//Password = "Apple001"
 		
 			connectUsername = $(byXpath('//table/tbody/tr/td/input[@name = "username"]'))
 			connectUsername.sendKeys(Username);
@@ -75,7 +95,9 @@
 			connect.click();
 			sleep(2000);
 			
-			loginta.append("Login Successful");
+			log.info("Login Successful with user- "+Username);
+			loginta.append("Login Successful with user- ");
+			loginta.append(evolve_login);
 			loginta.newLine();
 			
 			// Switching to the 1st frame, frame index 1
@@ -148,6 +170,10 @@
 				sleep(1000);
 				submit = $(byXpath('//table/tbody/tr/td/input[@type="button"][@value="Submit Files"]'));
 				submit.click();
+				log.info("Debit File Submitted");
+				loginta.append("Debit File Submitted");
+				loginta.newLine();
+				
 				}
 			catch (Exception e){
 				try {
@@ -165,10 +191,11 @@
 				// if fail need to call mail to send error
 				} catch (Exception ee) {
 					xpathError=$(byXpath('//div[@id="divView"]/table/tbody/tr[2]/td[2]/table/tbody/tr[2]/td[5]')); //error details and also debit total
-					xpathErrortext = xpathError.getText()
-					println(xpathErrortext)
-					//groovyLogger.info "Exception "+ xpathErrortext +" ***ERROR***"
-					//close()
+					xpathErrortext = xpathError.getText();
+					log.info("Error while uploading: "+xpathErrortext);
+					loginta.append("Error while uploading: ");
+					loginta.append(xpathErrortext);
+					loginta.newLine();
 
 				}
 
@@ -193,13 +220,17 @@
 					break;
 				}//end catch
 			} //end while
+			log.info("Advice and Report Files downloaded");
+			loginta.append("Advice and Report Files downloaded");
+			loginta.newLine();
 			
 			//reset rows
 			reset = $(byXpath('//*[@id="page_border"]/table/tbody/tr/td[2]/input[1]'));
 			reset.click();
 			confirm();
+			log.info("Rows Resetto");
 			
-						sleep(1000);
+			sleep(1000);
 			switchTo().defaultContent();
 			switchTo().frame(1)
 			
@@ -218,8 +249,8 @@
 			////////////////////////////////////////////////////////CREDIT/////////////////////////////////////////////////////////////////
 			
 			log.info("SFI Evolve- Credit");
-			Username = "OLI@01REVC" 
-			Password = "Apple001"
+			Username = evolve_credit_login; 
+			Password = evolve_credit_pass;
 		
 			connectUsername = $(byXpath('//table/tbody/tr/td/input[@name = "username"]'))
 			connectUsername.sendKeys(Username);
@@ -230,6 +261,11 @@
 			connect = $(byXpath('//table/tbody/tr/td/input[@value ="Login"]'));
 			connect.click();
 			sleep(2000);
+			
+			log.info("Login Successful with user- "+Username);
+			loginta.append("Login Successful with user- ");
+			loginta.append(evolve_login);
+			loginta.newLine();
 			
 			// Switching to the 1st frame, frame index 1
 			switchTo().frame(1)
@@ -301,6 +337,9 @@
 				sleep(1000);
 				submit = $(byXpath('//table/tbody/tr/td/input[@type="button"][@value="Submit Files"]'));
 				submit.click();
+				log.info("Credit File Submitted");
+				loginta.append("Credit File Submitted");
+				loginta.newLine();
 				}
 			catch (Exception e){
 				try {
@@ -319,9 +358,10 @@
 				} catch (Exception ee) {
 					xpathError=$(byXpath('//div[@id="divView"]/table/tbody/tr[2]/td[2]/table/tbody/tr[2]/td[5]')); //error details and also debit total
 					xpathErrortext = xpathError.getText()
-					println(xpathErrortext)
-					//groovyLogger.info "Exception "+ xpathErrortext +" ***ERROR***"
-					//close()
+					log.info("Error while uploading: "+xpathErrortext);
+					loginta.append("Error while uploading: ");
+					loginta.append(xpathErrortext);
+					loginta.newLine();
 
 				}
 
@@ -347,10 +387,15 @@
 				}//end catch
 			} //end while
 			
+			log.info("Advice and Report Files downloaded");
+			loginta.append("Advice and Report Files downloaded");
+			loginta.newLine();
+			
 			//reset rows
 			reset = $(byXpath('//*[@id="page_border"]/table/tbody/tr/td[2]/input[1]'));
 			reset.click();
 			confirm();
+			log.info("Rows Resetto");
 			
 			sleep(1000);
 			switchTo().defaultContent();
@@ -360,10 +405,7 @@
 			logout = $(byXpath("//a[contains(text(),'Logout')]"));
 			logout.click();
 			sleep(3000);
-			
-			//relogin
-			relogin = $(byXpath("//a[contains(text(),'Login')]"));
-			relogin.click();
+
 
 			////////////////////////////////////////////////////////CREDIT/////////////////////////////////////////////////////////////////		
 				

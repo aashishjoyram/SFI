@@ -1,0 +1,11 @@
+name,value
+path,\\muebcyp02fvg02\\eProcessing1$\\ROBOTICS\\SFI Refund\\
+morongwa_live,https://morongwa-prod.cto-morongwa.prod.caas.absa.co.za/#/search-payment
+ebox_portal,https://eboxprdcsc.corebanking.intra.absa.co.za/csc/login.jsp
+download_path,\\muebcyp02fvg02\eProcessing1$\ROBOTICS\SFI Refund\config\Open
+MAFolder_path,\\muebcyp02fvg02\\eProcessing1$\\ROBOTICS\\Sybrin Echannel\\
+reports201_path,\\muebcyp02fvg02\\eProcessing1$\\ROBOTICS\\201 REPORTS\\
+secret,KZ4U6RSLIRAWO32MGB2FCOBSGVQUUNBS
+mail_to,Olivier.Rayapen@absa.africa
+mail_cc,
+open_path,\\muebcyp02fvg02\\eProcessing1$\\ROBOTICS\\SFI Refund\\config\\Open\\

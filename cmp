@@ -59,7 +59,7 @@
 			//EBOX one day before check for BIR, ECH, AAH, AAO 02/10/20
 			//MORONGWA date scenario to run 1030 and 1600 02/10/20
 			//SWIFT removed break while searching for acc no and bo[stopping loop when searched for acc num] 05/11/20
-			
+			//SWIFT added acc_num_found check instead of break to stop searching for acc num once found 05/11/20
 			
 			//to test
 			
@@ -112,13 +112,12 @@
 			import java.util.regex.Matcher;
 			
 			//Recycle
-			String download_path = "\\\\muebcyp02fvg02\\eProcessing1\$\\ROBOTICS\\SFI Refund\\config\\Open\\"//open_path;
-			String karanLocalStr = "2020-11-04"//current_date;
-			String pwdStr 		 = "2020-11-03"//previous_date;
-			String previousPwdStr = "2020-11-02"//second_previous_date;
-			String daily_path =  "\\\\muebcyp02fvg02\\eProcessing1\$\\ROBOTICS\\SFI Refund\\2020\\11 November\\04.11.20\\Evening\\"//daily_path_str;
-			String dateExcelPath = "\\\\muebcyp02fvg02\\eProcessing1\$\\ROBOTICS\\SFI Refund\\2020\\11 November\\04.11.20\\Evening\\2020-11-04_evening_report.xlsx"//daily_report_path_str;
-			
+			String download_path = open_path;
+			String karanLocalStr = current_date;
+			String pwdStr 		 = previous_date;
+			String previousPwdStr = second_previous_date;
+			String daily_path =  daily_path_str;
+			String dateExcelPath = daily_report_path_str;
 		 
 			LocalDate karanLocal    = LocalDate.parse(karanLocalStr); 					  
 			LocalDate pwd   	    = LocalDate.parse(pwdStr); 			
@@ -263,6 +262,7 @@
 				swiftBOName = "";
 				swiftAmount = 0.0;
 				listing = false;
+				acc_num_found = false;
 				
 				Row currentRow1 = outputSheet1.getRow(currentRowIndex1);
 				if(currentRow1 == null){
@@ -322,119 +322,132 @@
 						}
 						
 						//ACCOUNT NUMBER
-						//invalid credit account number
-						if(accountDetailsRawArr[i].contains("INVALID CREDIT ACCOUNT")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("-");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
-							partOne = partOne.trim();
-							String partTwo = accountDetailsRawArr[i+1].trim();
-							swiftAccNum = partOne + partTwo;
-							//println(swiftAccNum);
-							
-						}
-						//credit account is closed
-						if(accountDetailsRawArr[i].contains("CREDIT ACCOUNT IS CLOSED")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("-");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
-							partOne = partOne.trim();
-							String partTwo = accountDetailsRawArr[i+1].trim();
-							swiftAccNum = partOne + partTwo;
-							//println(swiftAccNum)
-							
-						}
-						//ac no. is invalid
-						if(accountDetailsRawArr[i].contains("AC NO.")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf(".");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
-						}
-						//A/C NO.
-						if(accountDetailsRawArr[i].contains("A/C NO.")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf(".");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
-						}
-						//acc not found
-						if(accountDetailsRawArr[i].contains("ACC") && accountDetailsRawArr[i].contains("NOT FOUND")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
-							int partTwoIndex = accountDetailsRawArr[i].indexOf("NO");
-							String partOne 	 = accountDetailsRawArr[i].substring(partOneIndex+3,partTwoIndex-1);
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
-						}
-						//inactive credit account
-						if(accountDetailsRawArr[i].contains("INACTIVE CREDIT ACCOUNT")){
-							int partOneIndex = accountDetailsRawArr[i].indexOf("-");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
-							String partTwo = accountDetailsRawArr[i+1].trim();
-							swiftAccNum = partOne + partTwo;
-							//println(swiftAccNum)
-						}
-						//acc no is invalid
-						if(accountDetailsRawArr[i].contains("//ACC NO")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("NO");
-							int partTwoIndex = accountDetailsRawArr[i].indexOf("IS");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+2,partTwoIndex-1);
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
-						}
-						//ACC xxx INVALID IN OUR BOOKS
-						if(accountDetailsRawArr[i].contains("INVALID IN OUR")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
-							int partTwoIndex = accountDetailsRawArr[i].indexOf("INVALID");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+3,partTwoIndex-1);
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
-						}
-						//ACC xxx 
-						//INVALID IN OUR BOOKS
-						if(accountDetailsRawArr[i].contains("//ACC")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+3,accountDetailsRawArr[i].length());
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println("ACC->"+swiftAccNum)
-						}
-						//BEN ACC
-						if(accountDetailsRawArr[i].contains("BEN ACC")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+3,accountDetailsRawArr[i].length());
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
-						}
-						//REF ACC NO XXX FOR
-						if(accountDetailsRawArr[i].contains("REF ACC NO")){
-							
-							int partOneIndex = accountDetailsRawArr[i].indexOf("ACC NO");
-							int partTwoIndex = accountDetailsRawArr[i].indexOf("FOR");
-							String partOne = accountDetailsRawArr[i].substring(partOneIndex+6,partTwoIndex-3);
-							partOne = partOne.trim();
-							swiftAccNum = partOne;
-							//println(swiftAccNum)
-							
+						if(!acc_num_found){
+							//invalid credit account number
+							if(accountDetailsRawArr[i].contains("INVALID CREDIT ACCOUNT")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("-");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
+								partOne = partOne.trim();
+								String partTwo = accountDetailsRawArr[i+1].trim();
+								swiftAccNum = partOne + partTwo;
+								acc_num_found = true;
+								//println(swiftAccNum);
+								
+							}
+							//credit account is closed
+							if(accountDetailsRawArr[i].contains("CREDIT ACCOUNT IS CLOSED")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("-");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
+								partOne = partOne.trim();
+								String partTwo = accountDetailsRawArr[i+1].trim();
+								swiftAccNum = partOne + partTwo;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//ac no. is invalid
+							if(accountDetailsRawArr[i].contains("AC NO.")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf(".");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//A/C NO.
+							if(accountDetailsRawArr[i].contains("A/C NO.")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf(".");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//acc not found
+							if(accountDetailsRawArr[i].contains("ACC") && accountDetailsRawArr[i].contains("NOT FOUND")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
+								int partTwoIndex = accountDetailsRawArr[i].indexOf("NO");
+								String partOne 	 = accountDetailsRawArr[i].substring(partOneIndex+3,partTwoIndex-1);
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//inactive credit account
+							if(accountDetailsRawArr[i].contains("INACTIVE CREDIT ACCOUNT")){
+								int partOneIndex = accountDetailsRawArr[i].indexOf("-");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+1,accountDetailsRawArr[i].length());
+								String partTwo = accountDetailsRawArr[i+1].trim();
+								swiftAccNum = partOne + partTwo;
+								acc_num_found = true;
+								//println(swiftAccNum)
+							}
+							//acc no is invalid
+							if(accountDetailsRawArr[i].contains("//ACC NO")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("NO");
+								int partTwoIndex = accountDetailsRawArr[i].indexOf("IS");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+2,partTwoIndex-1);
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//ACC xxx INVALID IN OUR BOOKS
+							if(accountDetailsRawArr[i].contains("INVALID IN OUR")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
+								int partTwoIndex = accountDetailsRawArr[i].indexOf("INVALID");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+3,partTwoIndex-1);
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//ACC xxx 
+							//INVALID IN OUR BOOKS
+							if(accountDetailsRawArr[i].contains("//ACC")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+3,accountDetailsRawArr[i].length());
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println("ACC->"+swiftAccNum)
+							}
+							//BEN ACC
+							if(accountDetailsRawArr[i].contains("BEN ACC")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("ACC");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+3,accountDetailsRawArr[i].length());
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
+							//REF ACC NO XXX FOR
+							if(accountDetailsRawArr[i].contains("REF ACC NO")){
+								
+								int partOneIndex = accountDetailsRawArr[i].indexOf("ACC NO");
+								int partTwoIndex = accountDetailsRawArr[i].indexOf("FOR");
+								String partOne = accountDetailsRawArr[i].substring(partOneIndex+6,partTwoIndex-3);
+								partOne = partOne.trim();
+								swiftAccNum = partOne;
+								acc_num_found = true;
+								//println(swiftAccNum)
+								
+							}
 						}
 						
 					
@@ -472,10 +485,8 @@
 							
 						}
 						
-						
-						
-						
 					}
+					
 					//add account details in IBK class record
 					if(!listing){
 						//println("ACCB->"+swiftAccNum)
@@ -688,11 +699,13 @@
 										if(st.amount == amount){
 											//println(raw_status)
 											//to make a search on ebox(MA only)
-											println("MATCHED BO-->"+st.bo_name)
-											println("BO DETAILS-->"+bo)
-											println("BO ARRAY-->"+boNameArr);
+											//println("MATCHED BO-->"+st.bo_name)
+											//println("BO DETAILS-->"+bo)
+											//println("BO ARRAY-->"+boNameArr);
 											
-											println("MA bo and amount matched")
+											log.info("MA File Path of Record Matched[BO and Amount]->"+file.getAbsolutePath())
+											
+											//println("MA bo and amount matched")
 											ebox.add(new IBK(st.cred_account_num,amount,st.deb_narrative,"",st.bo_name,eboxDate,dest_acc,dest_branch)); //add cr narrative
 										}
 									}
